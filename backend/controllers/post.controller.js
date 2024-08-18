@@ -13,14 +13,14 @@ export const addNewPost = async (req, res) => {
 
         if (!image) return res.status(400).json({ message: 'Image required' });
 
-        // image upload 
+
         const optimizedImageBuffer = await sharp(image.buffer)
             .resize({ width: 800, height: 800, fit: 'inside' })
             .toFormat('jpeg', { quality: 80 })
             .toBuffer();
 
-        // buffer to data uri
         const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString('base64')}`;
+        console.log(caption)
         const cloudResponse = await cloudinary.uploader.upload(fileUri);
         const post = await Post.create({
             caption,
