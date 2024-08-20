@@ -1,26 +1,70 @@
-import React, { useState } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import React, { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import useGetUserProfile from '@/hooks/useGetUserProfile';
 import { Link, useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { AtSign, Heart, MessageCircle } from 'lucide-react';
+import axios from 'axios';
 
 const Profile = () => {
   const params = useParams();
   const userId = params.id;
   useGetUserProfile(userId);
   const [activeTab, setActiveTab] = useState('posts');
+  const [isFollowing, setIsFollowing] = useState(false); // Add local state for isFollowing
+  const dispatch = useDispatch();
 
   const { userProfile, user } = useSelector(store => store.auth);
-
   const isLoggedInUserProfile = user?._id === userProfile?._id;
-  const isFollowing = false;
+
+  useEffect(() => {
+    // Update local state based on user following list
+    if (userProfile && user) {
+      setIsFollowing(user.following.includes(userProfile._id));
+    }
+  }, [userProfile, user]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   }
+
+  const handleFollow = async () => {
+    try {
+      const res = await axios.post(
+        `http://localhost:8000/api/v1/user/followorunfollow/${userProfile?._id}`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        
+        setIsFollowing(!isFollowing);
+
+        
+        if (isFollowing) {
+          dispatch({
+            type: 'REMOVE_FOLLOWING',
+            payload: userProfile?._id,
+          });
+        } else {
+          dispatch({
+            type: 'ADD_FOLLOWING',
+            payload: userProfile?._id,
+          });
+        }
+        console.log('Follow/Unfollow success:', res.data.message);
+      }
+    } catch (error) {
+      console.log('Error in follow/unfollow:', error);
+    }
+  };
+  const handleFollowersDet = async() => {
+    const res = await axios.get(`http://localhost:8000/api/v1/user/allfollowers/${userId}`);
+    console.log(res.data);
+  }
+
 
   const displayedPost = activeTab === 'posts' ? userProfile?.posts : userProfile?.bookmarks;
 
@@ -48,24 +92,23 @@ const Profile = () => {
                   ) : (
                     isFollowing ? (
                       <>
-                        <Button variant='secondary' className='h-8'>Unfollow</Button>
+                        <Button variant='secondary' className='h-8' onClick={handleFollow}>Unfollow</Button>
                         <Button variant='secondary' className='h-8'>Message</Button>
                       </>
                     ) : (
-                      <Button className='bg-[#0095F6] hover:bg-[#3192d2] h-8'>Follow</Button>
+                      <Button onClick={handleFollow} className='bg-[#0095F6] hover:bg-[#3192d2] h-8'>Follow</Button>
                     )
                   )
                 }
               </div>
               <div className='flex items-center gap-4'>
                 <p><span className='font-semibold'>{userProfile?.posts.length} </span>posts</p>
-                <p><span className='font-semibold'>{userProfile?.followers.length} </span>followers</p>
+                <p onClick={handleFollowersDet}><span className='font-semibold' >{userProfile?.followers.length} </span>followers</p>
                 <p><span className='font-semibold'>{userProfile?.following.length} </span>following</p>
               </div>
               <div className='flex flex-col gap-1'>
                 <span className='font-semibold'>{userProfile?.bio || 'bio here...'}</span>
                 <Badge className='w-fit' variant='secondary'><AtSign /> <span className='pl-1'>{userProfile?.username}</span> </Badge>
-                
               </div>
             </div>
           </section>
@@ -107,7 +150,7 @@ const Profile = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Profile
+export default Profile;

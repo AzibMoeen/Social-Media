@@ -240,16 +240,16 @@ export const bookmarkPost = async (req,res) => {
         const authorId = req.id;
         const post = await Post.findById(postId);
         if(!post) return res.status(404).json({message:'Post not found', success:false});
-        
         const user = await User.findById(authorId);
+
         if(user.bookmarks.includes(post._id)){
-            // already bookmarked -> remove from the bookmark
+
             await user.updateOne({$pull:{bookmarks:post._id}});
             await user.save();
             return res.status(200).json({type:'unsaved', message:'Post removed from bookmark', success:true});
 
         }else{
-            // bookmark krna pdega
+            
             await user.updateOne({$addToSet:{bookmarks:post._id}});
             await user.save();
             return res.status(200).json({type:'saved', message:'Post bookmarked', success:true});

@@ -60,7 +60,7 @@ export const login = async (req, res) => {
 
         const token = await jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: '1d' });
 
-        // populate each post if in the posts array
+
         const populatedPosts = await Promise.all(
             user.posts.map( async (postId) => {
                 const post = await Post.findById(postId);
@@ -166,14 +166,15 @@ export const getSuggestedUsers = async (req, res) => {
 };
 export const followOrUnfollow = async (req, res) => {
     try {
-        const followKrneWala = req.id; // patel
-        const jiskoFollowKrunga = req.params.id; // shivani
+        const followKrneWala = req.id; 
+        const jiskoFollowKrunga = req.params.id; 
         if (followKrneWala === jiskoFollowKrunga) {
             return res.status(400).json({
                 message: 'You cannot follow/unfollow yourself',
                 success: false
             });
         }
+        console.log(followKrneWala, jiskoFollowKrunga);
 
         const user = await User.findById(followKrneWala);
         const targetUser = await User.findById(jiskoFollowKrunga);
@@ -184,17 +185,18 @@ export const followOrUnfollow = async (req, res) => {
                 success: false
             });
         }
-        // mai check krunga ki follow krna hai ya unfollow
+        
+     
         const isFollowing = user.following.includes(jiskoFollowKrunga);
         if (isFollowing) {
-            // unfollow logic ayega
+            
             await Promise.all([
                 User.updateOne({ _id: followKrneWala }, { $pull: { following: jiskoFollowKrunga } }),
                 User.updateOne({ _id: jiskoFollowKrunga }, { $pull: { followers: followKrneWala } }),
             ])
             return res.status(200).json({ message: 'Unfollowed successfully', success: true });
         } else {
-            // follow logic ayega
+  
             await Promise.all([
                 User.updateOne({ _id: followKrneWala }, { $push: { following: jiskoFollowKrunga } }),
                 User.updateOne({ _id: jiskoFollowKrunga }, { $push: { followers: followKrneWala } }),
@@ -205,3 +207,89 @@ export const followOrUnfollow = async (req, res) => {
         console.log(error);
     }
 }
+
+const searchhUser = async (req, res) => {
+    const { query } = req.query;
+    if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Search query is required and must be a string" });
+    }
+
+    try {
+        const users = await User.aggregate([
+            {
+                $search: {
+                    index: 'default', 
+                    text: {
+                        query: query,
+                        path: ['username', 'email'],
+                        fuzzy: {
+                            maxEdits: 2,
+                            prefixLength: 3
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    password: 0,       
+                    email: 0,            
+                    followers: 0,        
+                    following: 0,        
+                    posts: 0,            
+                    bookmarks: 0,        
+                    gender: 0,           
+                   
+                }
+            }
+        ]).exec();
+     
+        console.log(users); 
+        res.status(200).json({ users });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+export const Allfollowers = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Fetch the user by ID
+        const user = await User.findById(id).exec();
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        
+
+        // Fetch all followers details
+        const followers = await Promise.all(
+            user.followers.map(async (followerId) => {
+                try {
+                    const follower = await User.findById(followerId).select('-password -email -bookmarks -followers -following').exec();
+                    return follower;
+                } catch (err) {
+                    console.error(`Error fetching follower with ID ${followerId}:`, err);
+                    return null; // Return null for failed fetches
+                }
+            })
+        );
+
+        // Filter out null results (in case some followers could not be fetched)
+        const validFollowers = followers.filter(follower => follower !== null);
+
+        console.log('Fetched followers:', validFollowers);
+
+        return res.status(200).json({
+            follow: validFollowers,
+            success: true
+        });
+    } catch (error) {
+        console.error('Error fetching followers:', error);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+
+
+export { searchhUser}; 
