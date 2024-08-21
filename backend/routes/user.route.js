@@ -1,5 +1,5 @@
 import express from "express";
-import { Allfollowers, editProfile, followOrUnfollow, getProfile, getSuggestedUsers, login, logout, register, searchhUser  } from "../controllers/user.controller.js";
+import { Allfollowers, editProfile, followOrUnfollow, getProfile, getSuggestedUsers, login, logout, register, searchhUser, Allfollowings  } from "../controllers/user.controller.js";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
 import upload from "../middlewares/multer.js";
 
@@ -14,5 +14,6 @@ router.route('/suggested').get(isAuthenticated, getSuggestedUsers);
 router.route('/followorunfollow/:id').post(isAuthenticated, followOrUnfollow);
 router.route('/search').get(searchhUser); 
 router.route('/allfollowers/:id').get(Allfollowers);
+router.route('/allfollowings/:id').get(Allfollowings);
 
 export default router;

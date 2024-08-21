@@ -7,22 +7,29 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { AtSign, Heart, MessageCircle } from 'lucide-react';
 import axios from 'axios';
+import Followers from './Followers';
+import Followings from './Following';
 
 const Profile = () => {
+  const [open, setOpen] = useState(false);
+  const [following,setFollowings] = useState([])
+  const [on, setOn] = useState(false);
   const params = useParams();
   const userId = params.id;
+  const [followers, setFollowers] = useState([]);
   useGetUserProfile(userId);
   const [activeTab, setActiveTab] = useState('posts');
-  const [isFollowing, setIsFollowing] = useState(false); // Add local state for isFollowing
+  const [isFollowing, setIsFollowing] = useState(true); 
+
   const dispatch = useDispatch();
 
   const { userProfile, user } = useSelector(store => store.auth);
   const isLoggedInUserProfile = user?._id === userProfile?._id;
 
   useEffect(() => {
-    // Update local state based on user following list
     if (userProfile && user) {
-      setIsFollowing(user.following.includes(userProfile._id));
+      if(user.following.includes(userProfile._id)){
+        setIsFollowing(true);}
     }
   }, [userProfile, user]);
 
@@ -38,10 +45,12 @@ const Profile = () => {
         { withCredentials: true }
       );
 
-      if (res.data.success) {
+      if (res.data.message==='followed successfully') {
         
-        setIsFollowing(!isFollowing);
-
+        setIsFollowing(true);
+      }else{
+        setIsFollowing(false);
+      }
         
         if (isFollowing) {
           dispatch({
@@ -55,14 +64,27 @@ const Profile = () => {
           });
         }
         console.log('Follow/Unfollow success:', res.data.message);
-      }
+      
     } catch (error) {
       console.log('Error in follow/unfollow:', error);
     }
   };
   const handleFollowersDet = async() => {
+    
     const res = await axios.get(`http://localhost:8000/api/v1/user/allfollowers/${userId}`);
+      setFollowers(res.data.follow);
+   
     console.log(res.data);
+    setOpen(true);
+  }
+
+  const handleFollowing1 = async() =>{
+
+    const res = await axios.get(`http://localhost:8000/api/v1/user/allfollowings/${userId}`);
+      setFollowings(res.data.following);
+  
+    console.log(res.data);
+    setOn(true);
   }
 
 
@@ -86,25 +108,24 @@ const Profile = () => {
                   isLoggedInUserProfile ? (
                     <>
                       <Link to="/account/edit"><Button variant='secondary' className='hover:bg-gray-200 h-8'>Edit profile</Button></Link>
-                      <Button variant='secondary' className='hover:bg-gray-200 h-8'>View archive</Button>
-                      <Button variant='secondary' className='hover:bg-gray-200 h-8'>Ad tools</Button>
+                      
                     </>
                   ) : (
                     isFollowing ? (
                       <>
-                        <Button variant='secondary' className='h-8' onClick={handleFollow}>Unfollow</Button>
+                        <Button variant='secondary' className='h-8 cursor-pointer' onClick={handleFollow}>Unfollow</Button>
                         <Button variant='secondary' className='h-8'>Message</Button>
                       </>
                     ) : (
-                      <Button onClick={handleFollow} className='bg-[#0095F6] hover:bg-[#3192d2] h-8'>Follow</Button>
+                      <Button onClick={handleFollow} className='bg-[#0095F6] hover:bg-[#3192d2] h-8 cursor-pointer'>Follow</Button>
                     )
                   )
                 }
               </div>
               <div className='flex items-center gap-4'>
                 <p><span className='font-semibold'>{userProfile?.posts.length} </span>posts</p>
-                <p onClick={handleFollowersDet}><span className='font-semibold' >{userProfile?.followers.length} </span>followers</p>
-                <p><span className='font-semibold'>{userProfile?.following.length} </span>following</p>
+                <p onClick={handleFollowersDet} className='cursor-pointer'><span className='font-semibold' >{userProfile?.followers.length} </span>followers</p>
+                <p onClick={handleFollowing1} className='cursor-pointer'><span className='font-semibold'>{userProfile?.following.length} </span>following</p>
               </div>
               <div className='flex flex-col gap-1'>
                 <span className='font-semibold'>{userProfile?.bio || 'bio here...'}</span>
@@ -142,12 +163,17 @@ const Profile = () => {
                         </button>
                       </div>
                     </div>
+
                   </div>
                 )
               })
             }
           </div>
+          <Followers open={open} setOpen={setOpen} followers={followers} />
+          <Followings on={on} setOn={setOn} followings={following} /> 
         </div>
+
+        
       </div>
     </div>
   );

@@ -275,7 +275,7 @@ export const Allfollowers = async (req, res) => {
             })
         );
 
-        // Filter out null results (in case some followers could not be fetched)
+     
         const validFollowers = followers.filter(follower => follower !== null);
 
         console.log('Fetched followers:', validFollowers);
@@ -289,7 +289,45 @@ export const Allfollowers = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+export const Allfollowings = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Fetch the user by ID
+        const user = await User.findById(id).exec();
 
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        
+
+        // Fetch all followers details
+        const followers = await Promise.all(
+            user.following.map(async (followerId) => {
+                try {
+                    const follower = await User.findById(followerId).select('-password -email -bookmarks -followers -following').exec();
+                    return follower;
+                } catch (err) {
+                    console.error(`Error fetching follower with ID ${followerId}:`, err);
+                    return null; // Return null for failed fetches
+                }
+            })
+        );
+
+     
+        const validFollowers = followers.filter(follower => follower !== null);
+
+        console.log('Fetched followers:', validFollowers);
+
+        return res.status(200).json({
+            following: validFollowers,
+            success: true
+        });
+    } catch (error) {
+        console.error('Error fetching followers:', error);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
 
 
 export { searchhUser}; 
