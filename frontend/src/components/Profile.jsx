@@ -9,6 +9,8 @@ import { AtSign, Heart, MessageCircle } from 'lucide-react';
 import axios from 'axios';
 import Followers from './Followers';
 import Followings from './Following';
+import { toast } from 'sonner';
+
 
 const Profile = () => {
   const [open, setOpen] = useState(false);
@@ -19,7 +21,7 @@ const Profile = () => {
   const [followers, setFollowers] = useState([]);
   useGetUserProfile(userId);
   const [activeTab, setActiveTab] = useState('posts');
-  const [isFollowing, setIsFollowing] = useState(true); 
+  const [isFollowing, setIsFollowing] = useState(false); 
 
   const dispatch = useDispatch();
 
@@ -29,8 +31,10 @@ const Profile = () => {
   useEffect(() => {
     if (userProfile && user) {
       if(user.following.includes(userProfile._id)){
-        setIsFollowing(true);}
+        setIsFollowing(true);
+      }
     }
+    
   }, [userProfile, user]);
 
   const handleTabChange = (tab) => {
@@ -46,10 +50,12 @@ const Profile = () => {
       );
 
       if (res.data.message==='followed successfully') {
-        
+      
         setIsFollowing(true);
+        toast.success(`You are now following ${userProfile?.username}`);
       }else{
         setIsFollowing(false);
+        toast.success(`You have unfollowed ${userProfile?.username}`);
       }
         
         if (isFollowing) {

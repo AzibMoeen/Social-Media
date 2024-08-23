@@ -23,7 +23,7 @@ const Post = ({ post = {} }) => {
 
     const changeEventHandler = (e) => {
         const inputText = e.target.value;
-        setText(inputText.trim());
+        setText(inputText);
     }
 
     const likeOrDislikeHandler = async () => {

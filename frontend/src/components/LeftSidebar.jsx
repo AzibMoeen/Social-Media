@@ -95,7 +95,7 @@ const LeftSidebar = () => {
 
     const navigateToUserProfile = (userId) => {
         navigate(`/profile/${userId}`);
-        setSearchMode(false); // Close the search mode after navigating
+        setSearchMode(false);
     }
 
     const sidebarItems = [
